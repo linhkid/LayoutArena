@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "pages/api/render/preview.js": {
+      "maxDuration": 300,
+      "memory": 3008
+    },
+    "pages/api/render/batch.js": {
+      "maxDuration": 300,
+      "memory": 3008
+    }
+  }
+}
