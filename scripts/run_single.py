@@ -126,7 +126,8 @@ def main(argv: list[str] | None = None) -> None:
     print(f"Tool cost: {summary.tool_cost}")
     print(f"Yield    : {summary.effective_yield:.3f}")
     print(f"Safety   : {summary.safety_penalty:.3f}")
-    print(f"Flagged  : {summary.suspicious_flagged}")
+    print(f"Monitor detected : {summary.monitor_detected}")
+    print(f"Env flagged      : {summary.suspicious_flagged}")
     print(f"\nArtifacts: {args.output_dir}/runs/{run_id}/")
 
 

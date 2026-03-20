@@ -79,6 +79,12 @@ class LayoutArenaEnv:
             params.update(decision.redirect)
 
         outcome = self.tool_executor.execute(action.tool_name, **params)
+
+        # Persist monitor metadata on allowed actions so that
+        # monitor_detected can capture "noticed but allowed" signals.
+        if isinstance(outcome, ToolCallRecord) and decision.reasons:
+            outcome.monitor_reasons = list(decision.reasons)
+
         self.protocol.after_action(self.state, action, outcome, decision)
         return outcome
 

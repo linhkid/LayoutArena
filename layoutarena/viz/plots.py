@@ -55,6 +55,9 @@ PROTOCOL_COLORS: dict[str, str] = {
     "enforcement": "#e74c3c",
     "bounded_control": "#f39c12",
     "stewardship_monitoring": "#2ecc71",
+    "stewardship (t=0.5)": "#27ae60",
+    "stewardship (t=0.7)": "#2ecc71",
+    "stewardship (t=0.9)": "#82e0aa",
 }
 
 _DEFAULT_FIGSIZE = (10, 7)
@@ -388,7 +391,9 @@ def plot_safety_usefulness_table(
         avg_q = sum(s.quality_score for s in sums) / n
         avg_c = sum(s.tool_cost for s in sums) / n
         avg_y = sum(s.effective_yield for s in sums) / n
-        det_r = sum(s.suspicious_flagged for s in sums) / n
+        det_r = (
+            sum(getattr(s, "monitor_detected", s.suspicious_flagged) for s in sums) / n
+        )
         avg_sp = sum(s.safety_penalty for s in sums) / n
         cell_text.append(
             [
@@ -444,12 +449,13 @@ def plot_threshold_sweep(
     output_path: str | Path,
     title: str | None = None,
 ) -> Path | None:
-    """Dual-axis line plot: safety and usefulness as a function of threshold.
+    """Dual-axis line plot: detection rate and usefulness as a function of threshold.
 
     Parameters
     ----------
     sweep_results:
-        List of ``ThresholdSweepResult`` (from ``sweep_thresholds``).
+        List of objects with ``.threshold``, ``.detection_rate``,
+        and ``.summary`` (with quality_score, effective_yield).
     """
     try:
         import matplotlib.pyplot as plt
@@ -457,24 +463,22 @@ def plot_threshold_sweep(
         return None
 
     _apply_style()
-    fig, ax_safety = plt.subplots(figsize=_DEFAULT_FIGSIZE)
-    ax_useful = ax_safety.twinx()
+    fig, ax_detect = plt.subplots(figsize=_DEFAULT_FIGSIZE)
+    ax_useful = ax_detect.twinx()
 
     thresholds = [r.threshold for r in sweep_results]
-    safety_vals = [
-        max(0.0, min(100.0, 100.0 - r.summary.safety_penalty)) for r in sweep_results
-    ]
+    detect_vals = [getattr(r, "detection_rate", 0.0) for r in sweep_results]
     useful_vals = [
         r.summary.quality_score * r.summary.effective_yield for r in sweep_results
     ]
 
-    (line_s,) = ax_safety.plot(
+    (line_d,) = ax_detect.plot(
         thresholds,
-        safety_vals,
+        detect_vals,
         color="#2ecc71",
         marker="o",
         linewidth=2,
-        label="Safety",
+        label="Detection Rate",
     )
     (line_u,) = ax_useful.plot(
         thresholds,
@@ -485,18 +489,25 @@ def plot_threshold_sweep(
         label="Usefulness",
     )
 
-    ax_safety.set_xlabel("Stewardship Threshold", fontsize=13)
-    ax_safety.set_ylabel("Safety (100 - penalty)", fontsize=13, color="#2ecc71")
+    ax_detect.set_xlabel("Stewardship Threshold", fontsize=13)
+    ax_detect.set_ylabel(
+        "Detection Rate (monitor_detected)",
+        fontsize=13,
+        color="#2ecc71",
+    )
     ax_useful.set_ylabel("Usefulness (quality x yield)", fontsize=13, color="#3498db")
-    ax_safety.tick_params(axis="y", labelcolor="#2ecc71")
+    ax_detect.tick_params(axis="y", labelcolor="#2ecc71")
     ax_useful.tick_params(axis="y", labelcolor="#3498db")
 
-    lines = [line_s, line_u]
+    lines = [line_d, line_u]
     labels = [l.get_label() for l in lines]
-    ax_safety.legend(lines, labels, loc="lower right", frameon=True, fontsize=10)
+    ax_detect.legend(lines, labels, loc="lower right", frameon=True, fontsize=10)
 
-    ax_safety.set_title(title or "Threshold Sweep: Safety vs. Usefulness", fontsize=15)
-    ax_safety.grid(True, alpha=0.3)
+    ax_detect.set_title(
+        title or "Threshold Sweep: Detection Rate vs. Usefulness",
+        fontsize=15,
+    )
+    ax_detect.grid(True, alpha=0.3)
 
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)

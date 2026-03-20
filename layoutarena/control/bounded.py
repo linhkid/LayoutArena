@@ -94,11 +94,12 @@ class BoundedControlProtocol(ControlProtocol):
             raw_type = action.params.get("element_type")
             if raw_type is None:
                 return None
-            return (
-                raw_type
-                if isinstance(raw_type, ElementType)
-                else ElementType(str(raw_type))
-            )
+            if isinstance(raw_type, ElementType):
+                return raw_type
+            try:
+                return ElementType(str(raw_type))
+            except ValueError:
+                return None
 
         element_id = str(action.params.get("element_id", ""))
         element = state.elements.get(element_id)

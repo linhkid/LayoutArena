@@ -90,12 +90,12 @@ def main(argv: list[str] | None = None) -> None:
     print(f"{'=' * 60}")
 
     accepted = sum(1 for s in summaries if s.accepted)
-    flagged = sum(1 for s in summaries if s.suspicious_flagged)
+    detected = sum(1 for s in summaries if s.monitor_detected)
     avg_quality = sum(s.quality_score for s in summaries) / max(len(summaries), 1)
     avg_yield = sum(s.effective_yield for s in summaries) / max(len(summaries), 1)
 
     print(f"Accepted     : {accepted}/{len(summaries)}")
-    print(f"Flagged      : {flagged}/{len(summaries)}")
+    print(f"Detected     : {detected}/{len(summaries)}")
     print(f"Avg quality  : {avg_quality:.3f}")
     print(f"Avg yield    : {avg_yield:.3f}")
 
