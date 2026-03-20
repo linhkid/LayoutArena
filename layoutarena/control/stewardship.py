@@ -94,7 +94,7 @@ class StewardshipProtocol(ControlProtocol):
         if element_type == ElementType.SUBHEAD:
             return {
                 "x": 80,
-                "y": 290,
+                "y": 330,
                 "width": int(self.canvas.width * 0.42),
                 "height": 120,
             }

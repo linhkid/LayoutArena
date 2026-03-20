@@ -28,11 +28,11 @@ def build_default_zone_map(canvas: CanvasSpec) -> dict[ElementType, tuple[Region
     """
 
     return {
-        ElementType.LOGO: ((48, 32, 180, 80),),
-        ElementType.HEADLINE: ((72, 120, int(canvas.width * 0.42), 180),),
-        ElementType.SUBHEAD: ((72, 320, int(canvas.width * 0.42), 140),),
+        ElementType.LOGO: ((40, 24, 190, 90),),
+        ElementType.HEADLINE: ((60, 118, int(canvas.width * 0.43), 195),),
+        ElementType.SUBHEAD: ((58, 258, int(canvas.width * 0.43), 208),),
         ElementType.IMAGE: (
-            (int(canvas.width * 0.55), 120, int(canvas.width * 0.34), 460),
+            (int(canvas.width * 0.55), 100, int(canvas.width * 0.35), 470),
         ),
     }
 
