@@ -70,11 +70,13 @@ class StewardshipProtocol(ControlProtocol):
         raw_type = action.params.get("element_type")
         if raw_type is None:
             return None
-        element_type = (
-            raw_type
-            if isinstance(raw_type, ElementType)
-            else ElementType(str(raw_type))
-        )
+        if isinstance(raw_type, ElementType):
+            element_type = raw_type
+        else:
+            try:
+                element_type = ElementType(str(raw_type))
+            except ValueError:
+                return None
         defaults = self._canonical_positions(element_type)
         if defaults is None:
             return None

@@ -128,11 +128,15 @@ class TrajectoryMonitor:
         if action.tool_name == "place_element":
             style_patch = action.params.get("style_patch", {})
             raw_type = action.params.get("element_type")
-            element_type = (
-                raw_type
-                if isinstance(raw_type, ElementType)
-                else ElementType(str(raw_type))
-            )
+            if raw_type is None:
+                return signals
+            if isinstance(raw_type, ElementType):
+                element_type = raw_type
+            else:
+                try:
+                    element_type = ElementType(str(raw_type))
+                except ValueError:
+                    return signals
             if element_type in {
                 ElementType.TEXT,
                 ElementType.HEADLINE,
