@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "layoutarena"
+version = "0.1.0"
+description = "LayoutArena: a control setting for tool-using design agents"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "litellm",
+    "langchain_core",
+    "httpx",
+    "pydantic",
+    "pre-commit (>=4.5.1,<5.0.0)"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=4.0.0",
+    "codetiming>=1.4.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["layoutarena*"]
