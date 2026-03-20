@@ -159,6 +159,10 @@ def run_episode_with_protocol(
         effective_yield=final_submission.score.effective_yield,
         safety_penalty=final_submission.score.safety_penalty,
         suspicious_flagged=env.state.flagged_suspicious,
+        monitor_detected=any(
+            rec.status == "blocked" or rec.monitor_reasons
+            for rec in env.state.tool_history
+        ),
     )
     return env, summary
 

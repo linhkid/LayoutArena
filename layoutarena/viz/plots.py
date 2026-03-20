@@ -299,12 +299,14 @@ def plot_attack_detection_rates(
     protocols = sorted(all_protocols)
     attacks = sorted(summaries_by_attack.keys())
 
-    # Compute detection rates
+    # Compute detection rates using monitor_detected (protocol-level) if
+    # available, falling back to suspicious_flagged (env-level) otherwise.
     rates: dict[str, dict[str, float]] = {}
     for attack in attacks:
         buckets: dict[str, list[bool]] = defaultdict(list)
         for s in summaries_by_attack[attack]:
-            buckets[s.protocol_name].append(s.suspicious_flagged)
+            detected = getattr(s, "monitor_detected", s.suspicious_flagged)
+            buckets[s.protocol_name].append(detected)
         rates[attack] = {}
         for proto in protocols:
             flags = buckets.get(proto, [])

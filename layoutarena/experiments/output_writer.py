@@ -30,6 +30,7 @@ _METRICS_FIELDS = [
     "effective_yield",
     "safety_penalty",
     "suspicious_flagged",
+    "monitor_detected",
     "attack",
     "seed",
     "threshold",

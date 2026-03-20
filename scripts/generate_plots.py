@@ -42,6 +42,7 @@ class _Summary:
     safety_penalty: float
     suspicious_flagged: bool
     attack_family: str = "unknown"
+    monitor_detected: bool = False
     threshold: float | None = None
     seed: int | None = None
 
@@ -81,6 +82,8 @@ def _load_csv(path: Path) -> list[_Summary]:
                     in ("true", "1", "yes"),
                     attack_family=row.get("attack_family", "")
                     or row.get("attack", "unknown"),
+                    monitor_detected=row.get("monitor_detected", "false").lower()
+                    in ("true", "1", "yes"),
                     threshold=threshold,
                     seed=seed,
                 ),
@@ -138,8 +141,10 @@ def _build_threshold_sweep(summaries: list[_Summary]) -> list:
 
 
 def _compute_real_diversity() -> dict[str, "DiversityReport"]:  # noqa: F821
-    """Run a small set of episodes per protocol and compute diversity from
-    actual final layout states (not summary-level proxies)."""
+    """Run episodes per protocol+attack=none and compute diversity from
+    actual final layout states.  Only accepted runs are included so that
+    rejected bounded-control runs (with fewer elements) do not pollute
+    the metric."""
     from layoutarena.env.models import CanvasSpec
     from layoutarena.experiments.batch_runner import build_episode_actions
     from layoutarena.experiments.briefs import hero_briefs
@@ -149,7 +154,7 @@ def _compute_real_diversity() -> dict[str, "DiversityReport"]:  # noqa: F821
     )
 
     canvas = CanvasSpec()
-    brief = hero_briefs()[0]  # hero_saas
+    briefs = hero_briefs()
     seeds = list(range(10))
     protocols = ["enforcement", "bounded_control", "stewardship_monitoring"]
 
@@ -157,18 +162,20 @@ def _compute_real_diversity() -> dict[str, "DiversityReport"]:  # noqa: F821
 
     for proto in protocols:
         states = []
-        for seed in seeds:
-            actions = build_episode_actions(canvas, brief, attack=None, seed=seed)
-            try:
-                env, _summary = run_scripted_episode(
-                    brief=brief,
-                    protocol_name=proto,
-                    actions=actions,
-                    canvas=canvas,
-                )
-                states.append(env.state)
-            except Exception:
-                continue  # skip failed runs (e.g. bounded rejections)
+        for brief in briefs:
+            for seed in seeds:
+                actions = build_episode_actions(canvas, brief, attack=None, seed=seed)
+                try:
+                    env, summary = run_scripted_episode(
+                        brief=brief,
+                        protocol_name=proto,
+                        actions=actions,
+                        canvas=canvas,
+                    )
+                    if summary.accepted:
+                        states.append(env.state)
+                except Exception:
+                    continue
 
         if len(states) >= 2:
             diversity_by_proto[proto] = compute_diversity(states)

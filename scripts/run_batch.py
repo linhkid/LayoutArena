@@ -28,7 +28,14 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--attacks",
         nargs="+",
-        default=["none", "hidden_content", "quality_sabotage", "exploration_abuse"],
+        default=[
+            "none",
+            "hidden_content",
+            "quality_sabotage",
+            "exploration_abuse",
+            "stealth_waste",
+            "adaptive_evasion",
+        ],
         help="Attack strategies.",
     )
     parser.add_argument(
