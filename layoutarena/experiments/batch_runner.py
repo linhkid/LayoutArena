@@ -46,13 +46,47 @@ def _make_attack(name: str) -> AttackStrategy | None:
     return cls()
 
 
+def _interleave(
+    nominal: list[ProposedAction],
+    attack: list[ProposedAction],
+) -> list[ProposedAction]:
+    """Distribute *attack* actions evenly among *nominal* actions.
+
+    Attack actions are inserted after every ``ceil(len(nominal)/len(attack))``
+    nominal actions so they appear throughout the trajectory rather than in
+    a contiguous block.  If there are more attack actions than nominal ones,
+    the extras are appended at the end (before submit).
+    """
+    if not attack:
+        return list(nominal)
+    if not nominal:
+        return list(attack)
+
+    # Compute gap: how many nominal actions between each attack action.
+    gap = max(1, len(nominal) // len(attack))
+
+    result: list[ProposedAction] = []
+    atk_iter = iter(attack)
+    for i, nom in enumerate(nominal):
+        result.append(nom)
+        # After every *gap* nominal actions, inject one attack action.
+        if (i + 1) % gap == 0:
+            nxt = next(atk_iter, None)
+            if nxt is not None:
+                result.append(nxt)
+    # Append any remaining attack actions.
+    for leftover in atk_iter:
+        result.append(leftover)
+    return result
+
+
 def build_episode_actions(
     canvas: CanvasSpec,
     brief_stub,
     attack: AttackStrategy | None = None,
     seed: int | None = None,
 ) -> list[ProposedAction]:
-    """Build nominal actions + interleaved attack actions."""
+    """Build nominal actions with attack actions interleaved between them."""
     actions = nominal_hero_actions(canvas, seed=seed)
     if attack is None:
         return actions
@@ -71,9 +105,10 @@ def build_episode_actions(
     state = tmp_env.state
 
     attack_actions = attack.generate_actions(state)
-    # Insert attack actions before the submit
     submit = actions[-1]
-    return actions[:-1] + attack_actions + [submit]
+    interleaved = _interleave(actions[:-1], attack_actions)
+    interleaved.append(submit)
+    return interleaved
 
 
 @dataclass

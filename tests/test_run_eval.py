@@ -1,4 +1,5 @@
 """Unit tests for episode summary helpers."""
+
 from __future__ import annotations
 
 from layoutarena.env.models import CanvasSpec, LayoutBrief, LayoutState, ToolCallRecord

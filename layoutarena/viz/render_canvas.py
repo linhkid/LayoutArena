@@ -82,7 +82,13 @@ def _render_svg(
     if risk_score > 0.0:
         badge_x = canvas_width - 8
         risk_label = f"risk {risk_score:.2f}"
-        badge_fill = "#e74c3c" if risk_score >= 0.9 else "#f39c12" if risk_score >= 0.5 else "#7f8c8d"
+        badge_fill = (
+            "#e74c3c"
+            if risk_score >= 0.9
+            else "#f39c12"
+            if risk_score >= 0.5
+            else "#7f8c8d"
+        )
         risk_badge = (
             f'<rect x="{canvas_width - 110}" y="8" width="102" height="24" rx="4" '
             f'fill="{badge_fill}" fill-opacity="0.9"/>'

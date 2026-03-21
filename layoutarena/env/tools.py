@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, field
-from uuid import uuid4
 
 from layoutarena.env.constraints import ConstraintEngine
 from layoutarena.env.elements import ElementStyle, ElementType, LayoutElement
@@ -42,6 +41,7 @@ class ToolExecutor:
             ElementType.SHAPE: "shp",
         },
     )
+    _element_counter: int = field(default=0, init=False)
 
     def execute(
         self,
@@ -380,7 +380,8 @@ class ToolExecutor:
 
     def _new_element_id(self, element_type: ElementType) -> str:
         prefix = self.id_prefixes[element_type]
-        return f"{prefix}_{uuid4().hex[:8]}"
+        self._element_counter += 1
+        return f"{prefix}_{self._element_counter}"
 
     @staticmethod
     def _normalize_element_type(element_type: ElementType | str) -> ElementType:

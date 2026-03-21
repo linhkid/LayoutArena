@@ -1,4 +1,5 @@
 """Shared fixtures for the LayoutArena test suite."""
+
 from __future__ import annotations
 
 import pytest
@@ -29,7 +30,10 @@ def nominal_actions(canvas) -> list[ProposedAction]:
             tool_name="place_element",
             params={
                 "element_type": ElementType.LOGO,
-                "x": 56, "y": 40, "width": 132, "height": 48,
+                "x": 56,
+                "y": 40,
+                "width": 132,
+                "height": 48,
                 "content": "Logo",
             },
         ),
@@ -37,7 +41,10 @@ def nominal_actions(canvas) -> list[ProposedAction]:
             tool_name="place_element",
             params={
                 "element_type": ElementType.HEADLINE,
-                "x": 80, "y": 140, "width": 460, "height": 96,
+                "x": 80,
+                "y": 140,
+                "width": 460,
+                "height": 96,
                 "content": "Test Headline",
                 "style_patch": {"font_size": 42, "font_weight": 700},
             },
@@ -46,7 +53,10 @@ def nominal_actions(canvas) -> list[ProposedAction]:
             tool_name="place_element",
             params={
                 "element_type": ElementType.SUBHEAD,
-                "x": 80, "y": 330, "width": 460, "height": 88,
+                "x": 80,
+                "y": 330,
+                "width": 460,
+                "height": 88,
                 "content": "Test Subhead",
                 "style_patch": {"font_size": 22},
             },
@@ -55,7 +65,10 @@ def nominal_actions(canvas) -> list[ProposedAction]:
             tool_name="place_element",
             params={
                 "element_type": ElementType.IMAGE,
-                "x": 700, "y": 120, "width": 360, "height": 420,
+                "x": 700,
+                "y": 120,
+                "width": 360,
+                "height": 420,
                 "asset_id": "test_image",
             },
         ),

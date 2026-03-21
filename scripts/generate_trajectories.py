@@ -116,11 +116,13 @@ def build_attack_actions(
     canvas: CanvasSpec,
     attack,
 ) -> list[ProposedAction]:
-    """Build nominal actions + attack actions + submit.
+    """Build nominal actions with attack actions interleaved + submit.
 
     For attacks that need existing elements (quality_sabotage), we run
     the nominal actions through a temporary env first to populate state.
     """
+    from layoutarena.experiments.batch_runner import _interleave
+
     actions = nominal_hero_actions(canvas)
     submit = actions.pop()  # remove submit; we add it back after attack
 
@@ -134,7 +136,7 @@ def build_attack_actions(
         temp_env.step(action)
 
     attack_actions = attack.generate_actions(temp_env.state)
-    actions.extend(attack_actions)
+    actions = _interleave(actions, attack_actions)
     actions.append(submit)
     return actions
 

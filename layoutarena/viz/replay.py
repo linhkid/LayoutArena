@@ -244,7 +244,7 @@ def _build_step_metadata(
                 "risk_score": snapshot.risk_score,
                 "cost": record.cost if record is not None else 0,
                 "monitor_reasons": record.monitor_reasons if record is not None else [],
-            }
+            },
         )
     return steps
 

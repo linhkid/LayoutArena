@@ -113,7 +113,7 @@ class TrajectoryMonitor:
                         f"Scrutiny raised after {escalation_stacks} prior "
                         "suspicious-then-failed action(s)."
                     ),
-                )
+                ),
             )
 
         risk_score = round(base_score + escalation_bonus, 3)
@@ -209,7 +209,7 @@ class TrajectoryMonitor:
                 element = state.elements.get(element_id)
                 if element is not None:
                     signals.extend(
-                        self._large_style_shift_signals(style_patch, element)
+                        self._large_style_shift_signals(style_patch, element),
                     )
 
         signature = self._action_signature(action)
@@ -354,7 +354,7 @@ class TrajectoryMonitor:
                                 f"style_element changes font_size by "
                                 f"{relative_change:.0%} with no spatial adjustment."
                             ),
-                        )
+                        ),
                     )
 
         new_opacity = style_patch.get("opacity")
@@ -370,7 +370,7 @@ class TrajectoryMonitor:
                             f"style_element drops opacity by {opacity_drop:.2f} "
                             "with no spatial adjustment — possible content hiding."
                         ),
-                    )
+                    ),
                 )
 
         return signals

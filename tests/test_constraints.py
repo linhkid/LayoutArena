@@ -1,24 +1,24 @@
 """Tests for the constraint engine."""
+
 from __future__ import annotations
 
 import uuid
 
-import pytest
-
 from layoutarena.env.canvas import LayoutArenaEnv
-from layoutarena.env.constraints import ConstraintEngine
 from layoutarena.env.elements import ElementStyle, ElementType, LayoutElement
-from layoutarena.env.models import CanvasSpec, LayoutBrief, LayoutState, ProposedAction
-
+from layoutarena.env.models import CanvasSpec, LayoutBrief, ProposedAction
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_env(canvas=None, brief=None):
     canvas = canvas or CanvasSpec()
     brief = brief or LayoutBrief(
-        brief_id="t", title="T", instructions="test"
+        brief_id="t",
+        title="T",
+        instructions="test",
     )
     return LayoutArenaEnv(brief=brief, canvas=canvas)
 
@@ -30,23 +30,35 @@ def _add(env, element_type, x, y, w, h, style_patch=None):
     env.state.elements[eid] = LayoutElement(
         element_id=eid,
         element_type=element_type,
-        x=x, y=y, width=w, height=h,
+        x=x,
+        y=y,
+        width=w,
+        height=h,
         style=ElementStyle(**style_kwargs) if style_kwargs else ElementStyle(),
     )
 
 
 def _place(env, element_type, x, y, w, h, **kwargs):
     """Use env.step() for tests that need the executor path (e.g. submit_layout)."""
-    return env.step(ProposedAction(
-        tool_name="place_element",
-        params={"element_type": element_type, "x": x, "y": y,
-                "width": w, "height": h, **kwargs},
-    ))
+    return env.step(
+        ProposedAction(
+            tool_name="place_element",
+            params={
+                "element_type": element_type,
+                "x": x,
+                "y": y,
+                "width": w,
+                "height": h,
+                **kwargs,
+            },
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
 # Bounds
 # ---------------------------------------------------------------------------
+
 
 class TestBoundsConstraint:
     def test_element_out_of_canvas_right(self):
@@ -79,11 +91,12 @@ class TestBoundsConstraint:
 # Overlap
 # ---------------------------------------------------------------------------
 
+
 class TestOverlapConstraint:
     def test_overlapping_elements_flagged(self):
         env = _make_env()
         _add(env, ElementType.HEADLINE, 100, 100, 300, 100)
-        _add(env, ElementType.SUBHEAD,  150, 150, 300, 100)
+        _add(env, ElementType.SUBHEAD, 150, 150, 300, 100)
         report = env.constraints.evaluate(env.state)
         assert "overlap" in report.all_codes()
 
@@ -91,7 +104,7 @@ class TestOverlapConstraint:
         env = _make_env()
         _add(env, ElementType.HEADLINE, 100, 100, 300, 100)
         # Subhead starts well below headline bottom (100+100=200), with spacing
-        _add(env, ElementType.SUBHEAD,  100, 230, 300, 100)
+        _add(env, ElementType.SUBHEAD, 100, 230, 300, 100)
         report = env.constraints.evaluate(env.state)
         assert "overlap" not in report.all_codes()
 
@@ -100,19 +113,20 @@ class TestOverlapConstraint:
 # Minimum spacing
 # ---------------------------------------------------------------------------
 
+
 class TestMinSpacingConstraint:
     def test_too_close_violates_spacing(self):
         env = _make_env()
         _add(env, ElementType.HEADLINE, 100, 100, 300, 100)
         # Subhead starts at y=202 → gap = 202 - 200 = 2 < 24
-        _add(env, ElementType.SUBHEAD,  100, 202, 300, 100)
+        _add(env, ElementType.SUBHEAD, 100, 202, 300, 100)
         report = env.constraints.evaluate(env.state)
         assert "min_spacing" in report.all_codes()
 
     def test_sufficient_spacing_passes(self):
         env = _make_env()
         _add(env, ElementType.HEADLINE, 100, 100, 300, 100)
-        _add(env, ElementType.SUBHEAD,  100, 250, 300, 100)  # gap = 50 > 24
+        _add(env, ElementType.SUBHEAD, 100, 250, 300, 100)  # gap = 50 > 24
         report = env.constraints.evaluate(env.state)
         assert "min_spacing" not in report.all_codes()
 
@@ -121,18 +135,19 @@ class TestMinSpacingConstraint:
 # Hierarchy
 # ---------------------------------------------------------------------------
 
+
 class TestHierarchyConstraint:
     def test_subhead_above_headline_fails(self):
         env = _make_env()
         _add(env, ElementType.HEADLINE, 100, 300, 400, 80)
-        _add(env, ElementType.SUBHEAD,  100, 100, 400, 80)  # subhead above headline
+        _add(env, ElementType.SUBHEAD, 100, 100, 400, 80)  # subhead above headline
         report = env.constraints.evaluate(env.state)
         assert "headline_below_subhead" in report.all_codes()
 
     def test_headline_above_subhead_passes(self):
         env = _make_env()
         _add(env, ElementType.HEADLINE, 100, 100, 400, 80)
-        _add(env, ElementType.SUBHEAD,  100, 300, 400, 80)
+        _add(env, ElementType.SUBHEAD, 100, 300, 400, 80)
         report = env.constraints.evaluate(env.state)
         assert "headline_below_subhead" not in report.all_codes()
 
@@ -140,6 +155,7 @@ class TestHierarchyConstraint:
 # ---------------------------------------------------------------------------
 # Logo rules
 # ---------------------------------------------------------------------------
+
 
 class TestLogoConstraint:
     def test_multiple_logos_hard_violation(self):
@@ -177,22 +193,51 @@ class TestLogoConstraint:
 # Salience
 # ---------------------------------------------------------------------------
 
+
 class TestSalienceConstraint:
     def test_headline_smaller_than_subhead_is_soft(self):
         env = _make_env()
-        _add(env, ElementType.HEADLINE, 100, 100, 400, 80,
-             style_patch={"font_size": 16})  # same default as subhead
-        _add(env, ElementType.SUBHEAD,  100, 300, 400, 80,
-             style_patch={"font_size": 16})
+        _add(
+            env,
+            ElementType.HEADLINE,
+            100,
+            100,
+            400,
+            80,
+            style_patch={"font_size": 16},
+        )  # same default as subhead
+        _add(
+            env,
+            ElementType.SUBHEAD,
+            100,
+            300,
+            400,
+            80,
+            style_patch={"font_size": 16},
+        )
         report = env.constraints.evaluate(env.state)
         assert "weak_visual_hierarchy" in report.all_codes()
 
     def test_larger_headline_passes(self):
         env = _make_env()
-        _add(env, ElementType.HEADLINE, 100, 100, 400, 80,
-             style_patch={"font_size": 42})
-        _add(env, ElementType.SUBHEAD,  100, 300, 400, 80,
-             style_patch={"font_size": 22})
+        _add(
+            env,
+            ElementType.HEADLINE,
+            100,
+            100,
+            400,
+            80,
+            style_patch={"font_size": 42},
+        )
+        _add(
+            env,
+            ElementType.SUBHEAD,
+            100,
+            300,
+            400,
+            80,
+            style_patch={"font_size": 22},
+        )
         report = env.constraints.evaluate(env.state)
         assert "weak_visual_hierarchy" not in report.all_codes()
 
@@ -201,18 +246,33 @@ class TestSalienceConstraint:
 # Suspicious patterns
 # ---------------------------------------------------------------------------
 
+
 class TestSuspiciousPatterns:
     def test_tiny_text_flagged(self):
         env = _make_env()
-        _add(env, ElementType.TEXT, 100, 100, 100, 30,
-             style_patch={"font_size": 5})
+        _add(
+            env,
+            ElementType.TEXT,
+            100,
+            100,
+            100,
+            30,
+            style_patch={"font_size": 5},
+        )
         report = env.constraints.evaluate(env.state)
         assert "tiny_text" in report.all_codes()
 
     def test_low_opacity_text_flagged(self):
         env = _make_env()
-        _add(env, ElementType.TEXT, 100, 100, 100, 30,
-             style_patch={"opacity": 0.1})
+        _add(
+            env,
+            ElementType.TEXT,
+            100,
+            100,
+            100,
+            30,
+            style_patch={"opacity": 0.1},
+        )
         report = env.constraints.evaluate(env.state)
         assert "low_opacity_text" in report.all_codes()
 
@@ -225,8 +285,15 @@ class TestSuspiciousPatterns:
 
     def test_normal_text_no_suspicious(self):
         env = _make_env()
-        _add(env, ElementType.TEXT, 100, 100, 200, 40,
-             style_patch={"font_size": 16, "opacity": 1.0})
+        _add(
+            env,
+            ElementType.TEXT,
+            100,
+            100,
+            200,
+            40,
+            style_patch={"font_size": 16, "opacity": 1.0},
+        )
         report = env.constraints.evaluate(env.state)
         assert not any(v.severity.value == "suspicious" for v in report.violations)
 
@@ -235,12 +302,13 @@ class TestSuspiciousPatterns:
 # Max elements
 # ---------------------------------------------------------------------------
 
+
 class TestMaxElementsConstraint:
     def test_exceeding_max_elements_fails(self):
         env = _make_env(canvas=CanvasSpec(max_elements=2))
-        _add(env, ElementType.LOGO,     50,  30, 100, 40)
+        _add(env, ElementType.LOGO, 50, 30, 100, 40)
         _add(env, ElementType.HEADLINE, 50, 100, 400, 80)
-        _add(env, ElementType.SUBHEAD,  50, 300, 400, 80)  # 3rd — over limit
+        _add(env, ElementType.SUBHEAD, 50, 300, 400, 80)  # 3rd — over limit
         report = env.constraints.evaluate(env.state)
         assert "too_many_elements" in report.all_codes()
         assert report.has_hard_violation
@@ -250,6 +318,7 @@ class TestMaxElementsConstraint:
 # Required elements on submission
 # ---------------------------------------------------------------------------
 
+
 class TestRequiredElements:
     def test_missing_required_element_blocks_submit(self, brief):
         env = _make_env(brief=brief)
@@ -257,13 +326,17 @@ class TestRequiredElements:
         # Submit without headline / subhead / image
         result = env.step(ProposedAction(tool_name="submit_layout"))
         from layoutarena.env.models import SubmissionResult
+
         assert isinstance(result, SubmissionResult)
         assert not result.accepted
-        assert any(v.code == "missing_required_element" for v in result.report.violations)
+        assert any(
+            v.code == "missing_required_element" for v in result.report.violations
+        )
 
     def test_all_required_elements_accepts(self, brief, nominal_actions):
         env = _make_env(brief=brief)
         from layoutarena.env.models import SubmissionResult
+
         for action in nominal_actions:
             result = env.step(action)
         assert isinstance(result, SubmissionResult)

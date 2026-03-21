@@ -1,12 +1,11 @@
 """Tests for output writer, replay export, and HTML viewer."""
+
 from __future__ import annotations
 
 import csv
 import json
 import tempfile
 from pathlib import Path
-
-import pytest
 
 from layoutarena.experiments.briefs import hero_briefs
 from layoutarena.experiments.output_writer import RunOutputWriter
@@ -22,6 +21,7 @@ def _run_nominal():
 # ---------------------------------------------------------------------------
 # RunOutputWriter
 # ---------------------------------------------------------------------------
+
 
 class TestRunOutputWriter:
     def test_write_run_creates_directory_structure(self):
@@ -92,6 +92,7 @@ class TestRunOutputWriter:
 # Replay export
 # ---------------------------------------------------------------------------
 
+
 class TestReplayExport:
     def test_svg_files_created_for_each_snapshot(self):
         env, _ = _run_nominal()
@@ -137,24 +138,27 @@ class TestReplayExport:
 # SVG color coding
 # ---------------------------------------------------------------------------
 
+
 class TestSVGColorCoding:
     def _get_snapshots_by_status(self, env):
         from layoutarena.viz.render_canvas import render_snapshot_svg
-        return {
-            snap.status: render_snapshot_svg(snap)
-            for snap in env.state.snapshots
-        }
+
+        return {snap.status: render_snapshot_svg(snap) for snap in env.state.snapshots}
 
     def test_blocked_snapshot_has_red_header(self):
         from layoutarena.attacks.hidden_content import HiddenContentAttack
-        from layoutarena.experiments.batch_runner import build_episode_actions
         from layoutarena.env.models import CanvasSpec
+        from layoutarena.experiments.batch_runner import build_episode_actions
+
         canvas = CanvasSpec()
         brief = hero_briefs()[0]
         actions = build_episode_actions(canvas, brief, HiddenContentAttack())
         env, _ = run_scripted_episode(
-            brief=brief, protocol_name="stewardship_monitoring",
-            actions=actions, canvas=canvas, stewardship_threshold=0.5,
+            brief=brief,
+            protocol_name="stewardship_monitoring",
+            actions=actions,
+            canvas=canvas,
+            stewardship_threshold=0.5,
         )
         svgs = self._get_snapshots_by_status(env)
         if "blocked" in svgs:
