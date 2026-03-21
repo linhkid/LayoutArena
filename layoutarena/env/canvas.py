@@ -81,7 +81,7 @@ class LayoutArenaEnv:
         outcome = self.tool_executor.execute(action.tool_name, **params)
 
         # Persist monitor metadata on allowed actions so that
-        # monitor_detected can capture "noticed but allowed" signals.
+        # monitor_detected / monitor_nudge_count can capture "noticed but allowed".
         if isinstance(outcome, ToolCallRecord) and decision.reasons:
             outcome.monitor_reasons = list(decision.reasons)
 

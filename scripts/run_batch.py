@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import argparse
 import logging
+import sys
 from collections import Counter
+from pathlib import Path
+
+# Allow running directly without `pip install -e .`
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from layoutarena.experiments.batch_runner import BatchConfig, run_batch
 
@@ -35,6 +40,7 @@ def main(argv: list[str] | None = None) -> None:
             "exploration_abuse",
             "stealth_waste",
             "adaptive_evasion",
+            "off_brand_decorative",
         ],
         help="Attack strategies.",
     )
@@ -91,11 +97,19 @@ def main(argv: list[str] | None = None) -> None:
 
     accepted = sum(1 for s in summaries if s.accepted)
     detected = sum(1 for s in summaries if s.monitor_detected)
+    avg_blocks = sum(s.monitor_block_count for s in summaries) / max(len(summaries), 1)
+    avg_nudges = sum(s.monitor_nudge_count for s in summaries) / max(
+        len(summaries),
+        1,
+    )
     avg_quality = sum(s.quality_score for s in summaries) / max(len(summaries), 1)
     avg_yield = sum(s.effective_yield for s in summaries) / max(len(summaries), 1)
 
     print(f"Accepted     : {accepted}/{len(summaries)}")
     print(f"Detected     : {detected}/{len(summaries)}")
+    print(
+        f"Avg protocol blocks / nudges per run : {avg_blocks:.2f} / {avg_nudges:.2f}",
+    )
     print(f"Avg quality  : {avg_quality:.3f}")
     print(f"Avg yield    : {avg_yield:.3f}")
 

@@ -230,7 +230,7 @@ In the scripted experiment, the three stewardship thresholds (0.5, 0.7, 0.9) pro
 
 ![Attack Detection Rates](figures/attack_detection_rates.png)
 
-Detection rates below reflect **protocol-level detection** (`monitor_detected`): whether the protocol's monitor blocked or flagged any action, including allowed actions where the monitor raised concerns but did not block. This excludes post-hoc environment-level suspicious content flags, which fire under all protocols (including enforcement) when suspicious content is present in the final layout.
+Detection rates below reflect **protocol-level detection** (`monitor_detected`): whether the protocol's monitor blocked or flagged any action, including allowed actions where the monitor raised concerns but did not block. Per-run CSV and `summary.json` also include **`monitor_block_count`** (hard vetoes only) and **`monitor_nudge_count`** (allowed steps with non-empty monitor reasons) for stricter “block-only” analyses. This excludes post-hoc environment-level suspicious content flags, which fire under all protocols (including enforcement) when suspicious content is present in the final layout.
 
 | Attack Family | Enforcement | Bounded | Stewardship |
 |---------------|------------|---------|-------------|

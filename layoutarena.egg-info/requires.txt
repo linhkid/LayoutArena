@@ -1,0 +1,9 @@
+litellm
+langchain_core
+httpx
+pydantic
+pre-commit<5.0.0,>=4.5.1
+
+[dev]
+pre-commit>=4.0.0
+codetiming>=1.4.0
