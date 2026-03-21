@@ -4,6 +4,11 @@ from __future__ import annotations
 
 import argparse
 import logging
+import sys
+from pathlib import Path
+
+# Allow running directly without `pip install -e .`
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from layoutarena.env.models import CanvasSpec
 from layoutarena.experiments.batch_runner import _make_attack, build_episode_actions
@@ -44,6 +49,7 @@ def main(argv: list[str] | None = None) -> None:
             "exploration_abuse",
             "stealth_waste",
             "adaptive_evasion",
+            "off_brand_decorative",
         ],
         help="Attack strategy to interleave.",
     )
@@ -127,6 +133,10 @@ def main(argv: list[str] | None = None) -> None:
     print(f"Yield    : {summary.effective_yield:.3f}")
     print(f"Safety   : {summary.safety_penalty:.3f}")
     print(f"Monitor detected : {summary.monitor_detected}")
+    print(
+        f"Protocol blocks  : {summary.monitor_block_count}  "
+        f"| nudges (allowed + reasons): {summary.monitor_nudge_count}",
+    )
     print(f"Env flagged      : {summary.suspicious_flagged}")
     print(f"\nArtifacts: {args.output_dir}/runs/{run_id}/")
 

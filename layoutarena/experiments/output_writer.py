@@ -31,6 +31,8 @@ _METRICS_FIELDS = [
     "safety_penalty",
     "suspicious_flagged",
     "monitor_detected",
+    "monitor_block_count",
+    "monitor_nudge_count",
     "attack",
     "seed",
     "threshold",

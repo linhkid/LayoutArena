@@ -10,16 +10,23 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "litellm",
-    "langchain_core",
+    "langchain-core",
+    "langchain-litellm",
     "httpx",
     "pydantic",
-    "pre-commit (>=4.5.1,<5.0.0)"
+    "pre-commit>=4.5.1,<5.0.0",
 ]
 
 [project.optional-dependencies]
+plots = [
+    "matplotlib",
+    "numpy",
+]
 dev = [
     "pre-commit>=4.0.0",
     "codetiming>=1.4.0",
+    "matplotlib",
+    "numpy",
 ]
 
 [tool.setuptools.packages.find]
