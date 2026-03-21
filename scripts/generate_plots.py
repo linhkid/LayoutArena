@@ -9,9 +9,11 @@ Usage
 
 The CSV is expected to have columns matching ``EpisodeSummary`` fields:
     protocol_name, brief_id, accepted, quality_score, tool_cost,
-    effective_yield, safety_penalty, suspicious_flagged
+    effective_yield, safety_penalty, suspicious_flagged,
+    monitor_detected, monitor_block_count, monitor_nudge_count
 
 Plus ``attack`` (attack family) and ``threshold`` (stewardship threshold).
+Older CSVs without the two count columns default those values to zero.
 """
 
 from __future__ import annotations
@@ -43,6 +45,8 @@ class _Summary:
     suspicious_flagged: bool
     attack_family: str = "unknown"
     monitor_detected: bool = False
+    monitor_block_count: float = 0.0
+    monitor_nudge_count: float = 0.0
     threshold: float | None = None
     seed: int | None = None
 
@@ -68,6 +72,15 @@ def _load_csv(path: Path) -> list[_Summary]:
                 except ValueError:
                     pass
 
+            def _float_col(key: str, default: float = 0.0) -> float:
+                raw = row.get(key, "")
+                if raw is None or str(raw).strip() == "":
+                    return default
+                try:
+                    return float(raw)
+                except ValueError:
+                    return default
+
             summaries.append(
                 _Summary(
                     protocol_name=row["protocol_name"],
@@ -84,6 +97,8 @@ def _load_csv(path: Path) -> list[_Summary]:
                     or row.get("attack", "unknown"),
                     monitor_detected=row.get("monitor_detected", "false").lower()
                     in ("true", "1", "yes"),
+                    monitor_block_count=_float_col("monitor_block_count"),
+                    monitor_nudge_count=_float_col("monitor_nudge_count"),
                     threshold=threshold,
                     seed=seed,
                 ),
@@ -135,6 +150,8 @@ def _build_threshold_sweep(summaries: list[_Summary]) -> list:
             safety_penalty=sum(s.safety_penalty for s in sums) / n,
             suspicious_flagged=any(s.suspicious_flagged for s in sums),
             monitor_detected=det_rate > 0,
+            monitor_block_count=sum(s.monitor_block_count for s in sums) / n,
+            monitor_nudge_count=sum(s.monitor_nudge_count for s in sums) / n,
             threshold=t,
         )
         points.append(_SweepPoint(threshold=t, detection_rate=det_rate, summary=avg))
@@ -246,6 +263,8 @@ def main() -> None:
                 safety_penalty=s.safety_penalty,
                 suspicious_flagged=s.suspicious_flagged,
                 monitor_detected=s.monitor_detected,
+                monitor_block_count=s.monitor_block_count,
+                monitor_nudge_count=s.monitor_nudge_count,
                 threshold=s.threshold,
                 seed=s.seed,
             )

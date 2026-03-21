@@ -26,6 +26,8 @@ def render_snapshot_svg(snapshot: LayoutSnapshot, *, title: str | None = None) -
         blocked_regions=snapshot.blocked_regions,
         title=title or f"Step {snapshot.step_index}: {snapshot.tool_name}",
         subtitle=f"{snapshot.status} | {snapshot.message}",
+        action_status=snapshot.status,
+        risk_score=snapshot.risk_score,
     )
 
 
@@ -59,13 +61,44 @@ def _render_svg(
     blocked_regions: list[Region],
     title: str,
     subtitle: str,
+    action_status: str = "ok",
+    risk_score: float = 0.0,
 ) -> str:
+    """Render a canvas to SVG.
+
+    Parameters
+    ----------
+    action_status:
+        The outcome status of the action that produced this snapshot.
+        ``"blocked"`` → red header; ``"failed"`` → orange header;
+        anything else → default (neutral) header.
+    risk_score:
+        Current cumulative risk score for the episode.  When non-zero a small
+        risk badge is rendered in the top-right corner of the header.
+    """
+    header_bg, title_color, border_color = _status_colors(action_status)
+
+    risk_badge = ""
+    if risk_score > 0.0:
+        badge_x = canvas_width - 8
+        risk_label = f"risk {risk_score:.2f}"
+        badge_fill = "#e74c3c" if risk_score >= 0.9 else "#f39c12" if risk_score >= 0.5 else "#7f8c8d"
+        risk_badge = (
+            f'<rect x="{canvas_width - 110}" y="8" width="102" height="24" rx="4" '
+            f'fill="{badge_fill}" fill-opacity="0.9"/>'
+            f'<text x="{badge_x}" y="24" text-anchor="end" '
+            f'font-family="Helvetica, Arial, sans-serif" font-size="12" '
+            f'font-weight="700" fill="#ffffff">{escape(risk_label)}</text>'
+        )
+
     header = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{canvas_width}" height="{canvas_height + 72}" viewBox="0 0 {canvas_width} {canvas_height + 72}">',
-        '<rect x="0" y="0" width="100%" height="100%" fill="#f6f2ea"/>',
-        f'<text x="24" y="28" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#1c1c1c">{escape(title)}</text>',
-        f'<text x="24" y="52" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#505050">{escape(subtitle)}</text>',
-        f'<rect x="0" y="72" width="{canvas_width}" height="{canvas_height}" fill="#fffdf8" stroke="#ddd4c6" stroke-width="2"/>',
+        f'<rect x="0" y="0" width="100%" height="72" fill="{header_bg}"/>',
+        f'<rect x="0" y="72" width="100%" height="{canvas_height}" fill="#f6f2ea"/>',
+        f'<text x="24" y="28" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="{title_color}">{escape(title)}</text>',
+        f'<text x="24" y="52" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="{title_color}" fill-opacity="0.8">{escape(subtitle)}</text>',
+        risk_badge,
+        f'<rect x="0" y="72" width="{canvas_width}" height="{canvas_height}" fill="#fffdf8" stroke="{border_color}" stroke-width="3"/>',
     ]
 
     blocked = [_render_blocked_region(region) for region in blocked_regions]
@@ -127,3 +160,23 @@ def _fill_color(element_type: ElementType) -> str:
         ElementType.SHAPE: "#efe3ff",
     }
     return palette[element_type]
+
+
+def _status_colors(action_status: str) -> tuple[str, str, str]:
+    """Return (header_bg, title_color, canvas_border_color) for a given status.
+
+    Statuses (as set by the environment and tool executor)
+    -------------------------------------------------------
+    blocked  → red    – prevented by the control protocol before execution
+    rejected → orange – executed but failed hard constraints
+    accepted → green  – final submission accepted
+    applied  → neutral – normal successful tool call
+    ready    → neutral – initial canvas state
+    """
+    if action_status == "blocked":
+        return "#fde8e8", "#7b1c1c", "#e74c3c"
+    if action_status == "rejected":
+        return "#fef3e2", "#7a4200", "#f39c12"
+    if action_status == "accepted":
+        return "#e8f8ed", "#1a4a2a", "#27ae60"
+    return "#f6f2ea", "#1c1c1c", "#ddd4c6"

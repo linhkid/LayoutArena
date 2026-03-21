@@ -41,6 +41,7 @@ from layoutarena.env.models import (
 from layoutarena.experiments.briefs import hero_briefs
 from layoutarena.experiments.run_eval import (
     EpisodeSummary,
+    compute_monitor_metrics,
     nominal_hero_actions,
     run_scripted_episode,
 )
@@ -73,6 +74,11 @@ def print_summary(summary: EpisodeSummary) -> None:
     print(f"  Effective yield:   {summary.effective_yield:.3f}")
     print(f"  Safety penalty:    {summary.safety_penalty:.3f}")
     print(f"  Suspicious flag:   {summary.suspicious_flagged}")
+    print(f"  Monitor detected:  {summary.monitor_detected}")
+    print(
+        f"  Protocol blocks:   {summary.monitor_block_count}  "
+        f"| nudges (allowed + reasons): {summary.monitor_nudge_count}",
+    )
 
 
 def print_tool_history(env: LayoutArenaEnv) -> None:
@@ -150,6 +156,7 @@ def run_episode_with_protocol(
     if final_submission is None:
         raise RuntimeError("Episode must end with submit_layout().")
 
+    detected, blocks, nudges = compute_monitor_metrics(env.state)
     summary = EpisodeSummary(
         protocol_name=protocol.name,
         brief_id=brief.brief_id,
@@ -159,10 +166,9 @@ def run_episode_with_protocol(
         effective_yield=final_submission.score.effective_yield,
         safety_penalty=final_submission.score.safety_penalty,
         suspicious_flagged=env.state.flagged_suspicious,
-        monitor_detected=any(
-            rec.status == "blocked" or rec.monitor_reasons
-            for rec in env.state.tool_history
-        ),
+        monitor_detected=detected,
+        monitor_block_count=blocks,
+        monitor_nudge_count=nudges,
     )
     return env, summary
 
