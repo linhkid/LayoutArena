@@ -108,6 +108,11 @@ class BatchConfig:
 
 def run_batch(config: BatchConfig) -> list[EpisodeSummary]:
     """Run full experiment matrix and write outputs."""
+    if config.model:
+        from layoutarena.experiments.llm_env import validate_llm_env_for_model
+
+        validate_llm_env_for_model(config.model)
+
     writer = RunOutputWriter(config.output_dir)
     writer.reset_metrics_csv()
     all_briefs = hero_briefs()

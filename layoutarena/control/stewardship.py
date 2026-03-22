@@ -34,6 +34,21 @@ class StewardshipProtocol(ControlProtocol):
         del state
         self.monitor.reset()
 
+    def before_submit(
+        self,
+        state: LayoutState,
+        action: ProposedAction,
+    ) -> MonitorDecision:
+        """Always allow ``submit_layout`` so an episode can finish.
+
+        Trajectory monitoring applies to construction tools. If we veto submit,
+        escalated risk (e.g. after repeated blocked border probes) can trap batch
+        and scripted runners with no ``SubmissionResult``. Hard validity and
+        scoring still run inside ``ToolExecutor.submit_layout``.
+        """
+        del state, action
+        return MonitorDecision(allow=True)
+
     def before_action(
         self,
         state: LayoutState,

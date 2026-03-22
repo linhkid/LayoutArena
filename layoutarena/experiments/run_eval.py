@@ -22,6 +22,7 @@ from layoutarena.env.models import (
     SubmissionResult,
     ToolCallRecord,
 )
+from layoutarena.experiments.llm_env import looks_like_llm_auth_failure
 from layoutarena.llm.call_llm import call_llm
 
 logger = logging.getLogger(__name__)
@@ -469,6 +470,15 @@ def run_llm_episode(
             max_retries=2,
             return_exception=True,
         )
+
+        if looks_like_llm_auth_failure(response):
+            raise RuntimeError(
+                "LLM authentication failed (missing or invalid API key?). "
+                "Set OPENAI_API_KEY or the key for your provider in the environment "
+                "or layout-hackathon/.env, or run without --model for scripted episodes.",
+            ) from (
+                response if isinstance(response, BaseException) else None
+            )
 
         action = _parse_llm_action(response)
         if action is None:

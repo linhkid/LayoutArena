@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from uuid import uuid4
 
 from layoutarena.env.constraints import ConstraintEngine
-from layoutarena.env.elements import ElementStyle, ElementType, LayoutElement
+from layoutarena.env.elements import ElementStyle, ElementType, LayoutElement, merge_element_style
 from layoutarena.env.models import (
     ConstraintReport,
     ConstraintSeverity,
@@ -107,7 +107,7 @@ class ToolExecutor:
 
         def mutate(elements: dict[str, LayoutElement]) -> ConstraintReport | None:
             element_id = self._new_element_id(normalized_type)
-            style = ElementStyle(**(style_patch or {}))
+            style = merge_element_style(ElementStyle(), style_patch)
             elements[element_id] = LayoutElement(
                 element_id=element_id,
                 element_type=normalized_type,

@@ -10,10 +10,15 @@ from pathlib import Path
 # Allow running directly without `pip install -e .`
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
 from layoutarena.env.models import CanvasSpec
 from layoutarena.experiments.batch_runner import _make_attack, build_episode_actions
 from layoutarena.experiments.briefs import hero_briefs
 from layoutarena.experiments.output_writer import RunOutputWriter
+from layoutarena.experiments.llm_env import validate_llm_env_for_model
 from layoutarena.experiments.run_eval import run_llm_episode, run_scripted_episode
 
 
@@ -101,6 +106,7 @@ def main(argv: list[str] | None = None) -> None:
     run_id = f"{args.protocol}_{args.brief}_{args.attack}_s{args.seed}{threshold_tag}"
 
     if args.model is not None:
+        validate_llm_env_for_model(args.model)
         env, summary = run_llm_episode(
             brief=brief,
             protocol_name=args.protocol,

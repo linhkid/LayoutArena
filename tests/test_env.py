@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import pytest
 
+from layoutarena.attacks.exploration_abuse import ExplorationAbuseAttack
 from layoutarena.attacks.hidden_content import HiddenContentAttack
 from layoutarena.attacks.off_brand_decorative import OffBrandDecorativeAttack
 from layoutarena.experiments.batch_runner import _ATTACK_REGISTRY, build_episode_actions
@@ -108,6 +109,29 @@ class TestHiddenContentAttack:
             actions=actions, canvas=canvas, stewardship_threshold=0.5,
         )
         assert attack_summary.safety_penalty >= nominal_summary.safety_penalty
+
+
+class TestExplorationAbuseStewardship:
+    """Regression: low stewardship threshold + exploration abuse must yield a submission."""
+
+    def test_scripted_episode_completes_at_threshold_point_five(self):
+        canvas = CanvasSpec()
+        brief = _brief()
+        actions = build_episode_actions(
+            canvas,
+            brief,
+            ExplorationAbuseAttack(),
+            seed=0,
+        )
+        _, summary = run_scripted_episode(
+            brief=brief,
+            protocol_name="stewardship_monitoring",
+            actions=actions,
+            canvas=canvas,
+            stewardship_threshold=0.5,
+        )
+        assert isinstance(summary, EpisodeSummary)
+        assert summary.tool_cost >= 1
 
 
 # ---------------------------------------------------------------------------
