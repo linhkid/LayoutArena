@@ -37,3 +37,7 @@ Batch and single runs write `outputs/metrics.csv` plus per-run folders under `ou
 Use `monitor_block_count` when you want a **strict** “hard intervention” rate for plots or tables; use `monitor_detected` for the **broad** protocol-attention signal (aligned with the default Pareto / detection-rate figures). `scripts/generate_plots.py` still uses `monitor_detected` for backward compatibility; new columns are optional when loading older CSVs (they default to zero).
 
 Helper: `layoutarena.experiments.run_eval.compute_monitor_metrics(state)` returns `(monitor_detected, monitor_block_count, monitor_nudge_count)` from a final `LayoutState`.
+
+## LLM runs (`--model`)
+
+`scripts/run_batch.py` and `scripts/run_single.py` load `layout-hackathon/.env` if present. For OpenAI-style model names (e.g. `gpt-4o-mini`), set **`OPENAI_API_KEY`**. For Anthropic / Gemini, set **`ANTHROPIC_API_KEY`** or **`GEMINI_API_KEY`** / **`GOOGLE_API_KEY`** respectively. If the key is missing, the batch runner **exits immediately** with a clear error instead of running hundreds of failing episodes. Omit `--model` to use the deterministic scripted policy (no API calls).

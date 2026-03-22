@@ -30,6 +30,25 @@ class ElementStyle:
     border_radius: int = 0
 
 
+_STYLE_KEYS = frozenset(ElementStyle.__dataclass_fields__)
+
+
+def merge_element_style(
+    base: ElementStyle,
+    patch: dict[str, Any] | None,
+) -> ElementStyle:
+    """Return a copy of *base* with only known ``ElementStyle`` keys from *patch* applied.
+
+    LLMs often emit CSS-like keys (e.g. ``line_height``) that are not part of the
+    v1 schema; those are ignored so tool execution cannot crash.
+    """
+    data = asdict(base)
+    for key, value in (patch or {}).items():
+        if key in _STYLE_KEYS:
+            data[key] = value
+    return ElementStyle(**data)
+
+
 @dataclass
 class LayoutElement:
     """A rectangular design element on the canvas."""
@@ -65,7 +84,7 @@ class LayoutElement:
         )
 
     def copy_with_style_patch(self, style_patch: dict[str, Any]) -> "LayoutElement":
-        updated_style = ElementStyle(**{**asdict(self.style), **style_patch})
+        updated_style = merge_element_style(self.style, style_patch)
         return LayoutElement(
             element_id=self.element_id,
             element_type=self.element_type,

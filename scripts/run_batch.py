@@ -11,6 +11,10 @@ from pathlib import Path
 # Allow running directly without `pip install -e .`
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
 from layoutarena.experiments.batch_runner import BatchConfig, run_batch
 
 
