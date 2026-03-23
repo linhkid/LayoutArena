@@ -1,10 +1,29 @@
 from __future__ import annotations
 
+import base64
+import functools
 from pathlib import Path
 from xml.sax.saxutils import escape
 
 from layoutarena.env.elements import ElementType, LayoutElement
 from layoutarena.env.models import LayoutSnapshot, LayoutState, Region
+
+_ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
+
+_ASSET_FILES: dict[ElementType, str] = {
+    ElementType.IMAGE: "images/image-city_skyline_sunset-5b96.png",
+    ElementType.LOGO: "logos/logo-earth_globe-cefc.png",
+    ElementType.SHAPE: "shapes/shape-colorful_diagonal_splash-9b94.png",
+}
+
+_VISUAL_TYPES = frozenset(_ASSET_FILES)
+
+
+@functools.lru_cache(maxsize=4)
+def _load_data_url(element_type: ElementType) -> str:
+    path = _ASSETS_DIR / _ASSET_FILES[element_type]
+    b64 = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:image/png;base64,{b64}"
 
 
 def render_state_svg(state: LayoutState, *, title: str | None = None) -> str:
@@ -111,35 +130,101 @@ def _render_element(element: LayoutElement) -> str:
     fill = _fill_color(element.element_type)
     opacity = max(0.0, min(1.0, float(element.style.opacity)))
     rect_y = element.y + 72
+    br = element.style.border_radius
+
+    # Background box (always drawn)
     lines = [
         (
             f'<rect x="{element.x}" y="{rect_y}" width="{element.width}" height="{element.height}" '
-            f'rx="{element.style.border_radius}" ry="{element.style.border_radius}" '
+            f'rx="{br}" ry="{br}" '
             f'fill="{fill}" fill-opacity="{opacity}" stroke="#202020" stroke-width="1.5"/>'
-        ),
-        (
-            f'<text x="{element.x + 8}" y="{rect_y + 20}" font-family="Helvetica, Arial, sans-serif" '
-            f'font-size="12" font-weight="700" fill="#202020">{escape(element.element_id)}</text>'
-        ),
-        (
-            f'<text x="{element.x + 8}" y="{rect_y + 38}" font-family="Helvetica, Arial, sans-serif" '
-            f'font-size="11" fill="#303030">{escape(element.element_type.value)}</text>'
         ),
     ]
 
-    content = element.content or element.asset_id or ""
-    if content:
-        preview = content if len(content) <= 60 else f"{content[:57]}..."
+    if element.element_type in _VISUAL_TYPES:
+        # Embed the real image, clipped to the element box
+        clip_id = f"clip-{id(element)}"
+        data_url = _load_data_url(element.element_type)
         lines.append(
-            (
-                f'<text x="{element.x + 8}" y="{rect_y + min(element.height - 8, 58)}" '
-                f'font-family="Helvetica, Arial, sans-serif" '
-                f'font-size="{max(10, min(18, element.style.font_size))}" fill="#202020">'
-                f"{escape(preview)}</text>"
-            ),
+            f'<defs><clipPath id="{clip_id}">'
+            f'<rect x="{element.x}" y="{rect_y}" width="{element.width}" height="{element.height}" '
+            f'rx="{br}" ry="{br}"/>'
+            f'</clipPath></defs>'
+        )
+        lines.append(
+            f'<image x="{element.x}" y="{rect_y}" width="{element.width}" height="{element.height}" '
+            f'href="{data_url}" preserveAspectRatio="xMidYMid slice" '
+            f'clip-path="url(#{clip_id})" opacity="{opacity}"/>'
+        )
+        # Small type label in top-left corner
+        lines.append(
+            f'<rect x="{element.x}" y="{rect_y}" width="{len(element.element_type.value) * 7 + 12}" '
+            f'height="20" rx="0" ry="0" fill="#000" fill-opacity="0.5"/>'
+        )
+        lines.append(
+            f'<text x="{element.x + 6}" y="{rect_y + 14}" font-family="Helvetica, Arial, sans-serif" '
+            f'font-size="11" font-weight="600" fill="#fff">{escape(element.element_type.value)}</text>'
+        )
+    else:
+        # Text element types: HEADLINE, SUBHEAD, TEXT
+        content = element.content or element.element_type.value.upper()
+        font_size = element.style.font_size
+        font_weight = element.style.font_weight
+        fg = element.style.foreground
+        font_family = element.style.font_family or "Montserrat, Helvetica, Arial, sans-serif"
+        align = element.style.align or "left"
+
+        anchor = {"left": "start", "center": "middle", "right": "end"}.get(align, "start")
+        text_x = {
+            "start": element.x + 8,
+            "middle": element.x + element.width // 2,
+            "end": element.x + element.width - 8,
+        }[anchor]
+
+        # Wrap text into lines that fit the element width
+        wrapped = _wrap_text(content, element.width - 16, font_size)
+        line_height = int(font_size * 1.3)
+        text_block_height = line_height * len(wrapped)
+        start_y = rect_y + max(int(font_size), (element.height - text_block_height) // 2 + int(font_size))
+
+        for i, line in enumerate(wrapped):
+            ty = start_y + i * line_height
+            if ty > rect_y + element.height - 4:
+                break
+            lines.append(
+                f'<text x="{text_x}" y="{ty}" text-anchor="{anchor}" '
+                f'font-family="{escape(font_family)}" font-size="{font_size}" '
+                f'font-weight="{font_weight}" fill="{escape(fg)}">'
+                f'{escape(line)}</text>'
+            )
+
+        # Small type label in top-left corner
+        lines.append(
+            f'<text x="{element.x + 6}" y="{rect_y + 12}" font-family="Helvetica, Arial, sans-serif" '
+            f'font-size="9" fill="#888">{escape(element.element_id)}</text>'
         )
 
     return "\n".join(lines)
+
+
+def _wrap_text(text: str, max_width: int, font_size: int) -> list[str]:
+    """Rough word-wrap based on average character width (~0.6 * font_size)."""
+    char_width = max(font_size * 0.55, 5)
+    chars_per_line = max(1, int(max_width / char_width))
+    words = text.replace("\n", " ").split()
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        test = f"{current} {word}".strip()
+        if len(test) <= chars_per_line:
+            current = test
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines or [text]
 
 
 def _render_blocked_region(region: Region) -> str:
