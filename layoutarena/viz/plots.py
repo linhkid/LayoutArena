@@ -140,7 +140,16 @@ def plot_pareto_frontier(
     output_path: str | Path,
     title: str | None = None,
 ) -> Path | None:
-    """Scatter plot of safety vs. usefulness with Pareto frontier overlay."""
+    """Scatter plot of protocol detection rate vs. usefulness with frontier overlay.
+
+    Notes
+    -----
+    In the current paper pipeline, the ``safety`` coordinate is typically
+    populated with a protocol-level detection proxy (e.g. ``monitor_detected``)
+    rather than ``100 - safety_penalty``.  The axis label and annotation below
+    make that explicit so the figure cannot be misread as a pure output-side
+    safety metric.
+    """
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -170,6 +179,45 @@ def plot_pareto_frontier(
             linewidths=0.5,
         )
 
+    # Annotate overlapping stewardship thresholds explicitly instead of letting
+    # them disappear under the frontier marker.
+    overlap_buckets: dict[tuple[float, float], list[str]] = defaultdict(list)
+    for pt in points:
+        key = (round(pt.usefulness, 6), round(pt.safety, 6))
+        overlap_buckets[key].append(pt.protocol_name)
+    for (x, y), names in overlap_buckets.items():
+        stewardship_names = [
+            name for name in names if name.startswith("stewardship (t=")
+        ]
+        if len(stewardship_names) <= 1:
+            continue
+        thresholds = sorted(
+            name.replace("stewardship (t=", "").replace(")", "")
+            for name in stewardship_names
+        )
+        ax.annotate(
+            "t=" + " / ".join(thresholds) + "\n(overlap)",
+            xy=(x, y),
+            xytext=(14, 14),
+            textcoords="offset points",
+            fontsize=8.5,
+            color="#1c1c1c",
+            ha="left",
+            va="bottom",
+            bbox={
+                "boxstyle": "round,pad=0.25",
+                "facecolor": "white",
+                "edgecolor": "#b8b8b8",
+                "alpha": 0.92,
+            },
+            arrowprops={
+                "arrowstyle": "-",
+                "color": "#666666",
+                "lw": 0.8,
+            },
+            zorder=7,
+        )
+
     # Compute and draw frontier
     frontier = pareto_frontier(points)
     if frontier:
@@ -187,17 +235,31 @@ def plot_pareto_frontier(
         ax.scatter(
             fx,
             fy,
-            color="#2c3e50",
-            s=120,
+            facecolors="none",
+            edgecolors="#2c3e50",
+            s=130,
             marker="D",
             zorder=6,
-            edgecolors="white",
-            linewidths=0.8,
+            linewidths=1.4,
         )
 
     ax.set_xlabel("Usefulness", fontsize=13)
-    ax.set_ylabel("Safety", fontsize=13)
-    ax.set_title(title or "Safety vs. Usefulness (Pareto Frontier)", fontsize=15)
+    ax.set_ylabel("Protocol Detection Rate (%)", fontsize=13)
+    ax.set_title(
+        title or "Protocol Detection Rate vs. Usefulness (Pareto Frontier)",
+        fontsize=15,
+    )
+    ax.set_ylim(-2, 102)
+    ax.text(
+        0.01,
+        0.01,
+        "Y-axis uses monitor_detected as the safety proxy.",
+        transform=ax.transAxes,
+        fontsize=8,
+        color="#555555",
+        ha="left",
+        va="bottom",
+    )
     ax.legend(frameon=True, fontsize=10)
     ax.grid(True, alpha=0.3)
 
@@ -449,13 +511,14 @@ def plot_threshold_sweep(
     output_path: str | Path,
     title: str | None = None,
 ) -> Path | None:
-    """Dual-axis line plot: detection rate and usefulness as a function of threshold.
+    """Two-panel threshold sweep.
 
     Parameters
     ----------
     sweep_results:
         List of objects with ``.threshold``, ``.detection_rate``,
-        and ``.summary`` (with quality_score, effective_yield).
+        and ``.summary`` (with quality_score, effective_yield,
+        monitor_block_count, monitor_nudge_count).
     """
     try:
         import matplotlib.pyplot as plt
@@ -463,13 +526,25 @@ def plot_threshold_sweep(
         return None
 
     _apply_style()
-    fig, ax_detect = plt.subplots(figsize=_DEFAULT_FIGSIZE)
+    fig, (ax_detect, ax_intervene) = plt.subplots(
+        2,
+        1,
+        figsize=(10, 9),
+        sharex=True,
+        gridspec_kw={"height_ratios": [3, 2]},
+    )
     ax_useful = ax_detect.twinx()
 
     thresholds = [r.threshold for r in sweep_results]
     detect_vals = [getattr(r, "detection_rate", 0.0) for r in sweep_results]
     useful_vals = [
         r.summary.quality_score * r.summary.effective_yield for r in sweep_results
+    ]
+    block_vals = [
+        float(getattr(r.summary, "monitor_block_count", 0.0)) for r in sweep_results
+    ]
+    nudge_vals = [
+        float(getattr(r.summary, "monitor_nudge_count", 0.0)) for r in sweep_results
     ]
 
     (line_d,) = ax_detect.plot(
@@ -488,8 +563,17 @@ def plot_threshold_sweep(
         linewidth=2,
         label="Usefulness",
     )
+    ax_detect.text(
+        0.02,
+        0.08,
+        "Scripted runs: detection/usefulness overlap across thresholds.",
+        transform=ax_detect.transAxes,
+        fontsize=8.5,
+        color="#555555",
+        ha="left",
+        va="bottom",
+    )
 
-    ax_detect.set_xlabel("Stewardship Threshold", fontsize=13)
     ax_detect.set_ylabel(
         "Detection Rate (monitor_detected)",
         fontsize=13,
@@ -503,8 +587,35 @@ def plot_threshold_sweep(
     labels = [l.get_label() for l in lines]
     ax_detect.legend(lines, labels, loc="lower right", frameon=True, fontsize=10)
 
+    (line_b,) = ax_intervene.plot(
+        thresholds,
+        block_vals,
+        color="#e67e22",
+        marker="^",
+        linewidth=2,
+        label="Avg Blocks / Run",
+    )
+    (line_n,) = ax_intervene.plot(
+        thresholds,
+        nudge_vals,
+        color="#8e44ad",
+        marker="v",
+        linewidth=2,
+        label="Avg Nudges / Run",
+    )
+    ax_intervene.set_xlabel("Stewardship Threshold", fontsize=13)
+    ax_intervene.set_ylabel("Avg Monitor Interventions / Run", fontsize=13)
+    ax_intervene.legend(
+        [line_b, line_n],
+        [line_b.get_label(), line_n.get_label()],
+        loc="best",
+        frameon=True,
+        fontsize=10,
+    )
+    ax_intervene.grid(True, alpha=0.3)
+
     ax_detect.set_title(
-        title or "Threshold Sweep: Detection Rate vs. Usefulness",
+        title or "Threshold Sweep: Overlapping Outcomes, Different Intervention Style",
         fontsize=15,
     )
     ax_detect.grid(True, alpha=0.3)

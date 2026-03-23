@@ -272,9 +272,9 @@ def main() -> None:
         else:
             pareto_summaries.append(s)
 
-    # Safety = detection rate (monitor_detected), which is the protocol-level
-    # metric that actually differentiates protocols and thresholds.
-    # Usefulness = quality_score * effective_yield (layout quality x efficiency).
+    # Y-axis = protocol detection rate (monitor_detected), which is the
+    # protocol-level safety proxy used in the current paper figures.
+    # X-axis = quality_score * effective_yield (layout quality x efficiency).
     def _safety(s):
         return 100.0 * float(getattr(s, "monitor_detected", False))
 
