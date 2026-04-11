@@ -229,9 +229,15 @@ def _wrap_text(text: str, max_width: int, font_size: int) -> list[str]:
 
 def _render_blocked_region(region: Region) -> str:
     x, y, width, height = region
+    # Expand the visual indicator so tiny blocked elements remain visible.
+    pad = 10
+    vis_x = max(0, x - pad)
+    vis_y = max(0, y - pad)
+    vis_w = width + 2 * pad
+    vis_h = height + 2 * pad
     return (
-        f'<rect x="{x}" y="{y + 72}" width="{width}" height="{height}" fill="none" '
-        'stroke="#cf2f25" stroke-width="2" stroke-dasharray="8 4"/>'
+        f'<rect x="{vis_x}" y="{vis_y + 72}" width="{vis_w}" height="{vis_h}" fill="#e74c3c" fill-opacity="0.08" '
+        f'stroke="#cf2f25" stroke-width="3" stroke-dasharray="8 4"/>'
     )
 
 
